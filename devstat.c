@@ -9,10 +9,10 @@
 // cc devstat.c -o devstat -ldevstat -lkvm && ./devstat
 
 typedef struct {
-	uint64_t	read;
-	uint64_t	write;
-	uint64_t	free;
-} Bytes;
+	uint64_t	bytes;
+	uint64_t	transfers;
+	uint64_t	blocks;
+} Totals;
 
 typedef struct {
 	uint64_t	other;
@@ -31,11 +31,12 @@ typedef struct {
 typedef struct {
 	char		device[DEVSTAT_NAME_LEN];
 	int		unit;
-	Bytes		bytes;
-	Transfers	transfers;
-	Duration	duration;
-	long		busyTime;
-	uint64_t	blocks;
+	Totals		totals;
+        long double	kb_per_transfer;
+        long double	transfers_per_second;
+        long double	mb_per_second;
+        long double	blocks_per_second;
+        long double	ms_per_transaction;
 } Stats;
 
 int _get_ndevs() {
@@ -84,16 +85,16 @@ Stats _get_stats(int i) {
 		&blocks_per_second,
 		&ms_per_transaction);
 
-	stats.bytes.read = total_bytes;
-	stats.bytes.write = total_transfers;
-	stats.bytes.free = total_blocks;
-	/* stats.duration.other = kb_per_transfer; */
-	/* stats.duration.read = transfers_per_second; */
-	/* stats.duration.write = mb_per_second; */
-	/* stats.duration.free = ms_per_transaction; */
-	/* stats.blocks = total_blocks; */
+        stats.totals.bytes = total_bytes;
+        stats.totals.transfers = total_transfers;
+        stats.totals.blocks = total_blocks;
+        stats.kb_per_transfer =	kb_per_transfer;
+        stats.transfers_per_second = transfers_per_second;
+        stats.mb_per_second = mb_per_second;
+        stats.blocks_per_second = blocks_per_second;
+        stats.ms_per_transaction = ms_per_transaction;
 
-	return stats;
+        return stats;
 }
 
 int main(void) {
@@ -103,9 +104,14 @@ int main(void) {
         for (int i = 0; i < j; ++i) {
                 s = _get_stats(i);
                 printf("%s%d\n", s.device, s.unit);
-                printf("total bytes: %lld\n", s.bytes.read);
-                printf("total transfers: %lld\n", s.bytes.write);
-                printf("total blocks: %lld\n", s.bytes.free);
+                printf("total bytes: %lld\n", s.totals.bytes);
+                printf("total transfers: %lld\n", s.totals.transfers);
+                printf("total blocks: %lld\n", s.totals.blocks);
 
+                printf("kb per transfer: %Lg\n", s.kb_per_transfer);
+                printf("transfers per second: %Lg\n", s.transfers_per_second);
+                printf("mb per second: %Lg\n", s.mb_per_second);
+                printf("blocks per second: %Lg\n", s.blocks_per_second);
+                printf("ms per transaction: %Lg\n", s.ms_per_transaction);
         }
 }
